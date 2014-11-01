@@ -3,7 +3,7 @@
 ## install
 ``` sh
     $ apt-get install python-mechanize
-    $ git clone ...
+    $ git clone git@github.com:solorab/ku-kyuko.git
 ```
 
 ## use
