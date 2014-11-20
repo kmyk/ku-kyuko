@@ -107,7 +107,7 @@ if __name__ == '__main__':
         import getpass
         args.password = getpass.getpass('password: ')
     for f in [args.cache, args.log]:
-        dirname = os.path.dirname(f)
+        dirname = os.path.dirname(os.path.abspath(f))
         if not os.path.exists(dirname):
             os.makedirs(dirname)
     logging.basicConfig(filename=args.log, level=logging.DEBUG)
