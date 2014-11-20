@@ -3,9 +3,7 @@
 
 import logging
 import mechanize # fails on python3
-import time
 import re
-import json
 import datetime
 import smtplib
 import email
@@ -13,22 +11,27 @@ import email.mime.text
 import os
 import sys
 
+debug_not_use_mobile = False
+
 def load_kyuko(user, password):
     logging.debug('begin scraping')
     br = mechanize.Browser()
-    br.set_handle_robots(False) # sorry
+    br.set_handle_robots(False)
 
-    # driver.get('https://kym.kobe-u.ac.jp/kobe-u/campus')
-    br.open('https://mob-kym.kobe-u.ac.jp/kobe-m/campus')
+    if debug_not_use_mobile:
+        br.open('https://kym.kobe-u.ac.jp/kobe-u/campus')
+    else:
+        br.open('https://mob-kym.kobe-u.ac.jp/kobe-m/campus')
     br.select_form(name='form')
     br['usernm'] = user
     br['passwd'] = password
     br.submit()
 
-    # driver.get('https://kym.kobe-u.ac.jp/kobe-u/campus?view=view.menu&func=function.kyukohoko.kyukohoko.refer')
-    br.follow_link(url_regex='func=function\.keitai\.kyukohoko\.refer')
+    if debug_not_use_mobile:
+        br.open('https://kym.kobe-u.ac.jp/kobe-u/campus?view=view.menu&func=function.kyukohoko.kyukohoko.refer')
+    else:
+        br.follow_link(url_regex='func=function\.keitai\.kyukohoko\.refer')
 
-    # driver.quit()
     return br.response().get_data().decode('shift_jis')
 
 def parse_kyuko(html):
@@ -96,6 +99,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--password')
     parser.add_argument('--cache', default=os.path.expanduser('~/.ku-kyuko/cache'))
     parser.add_argument('--log', default=os.path.expanduser('~/.ku-kyuko/log'))
+    parser.add_argument('--debug-not-use-mobile', action='store_true')
+    parser.add_argument('--debug-only-print', action='store_true')
     args = parser.parse_args()
     if args.user is None:
         if not sys.stdin.isatty():
@@ -114,10 +119,14 @@ if __name__ == '__main__':
 
     logging.debug('begin program')
     try:
+        debug_not_use_mobile = args.debug_not_use_mobile
         kyuko = load_kyuko(args.user, args.password)
-        kyuko = parse_kyuko(kyuko)
-        kyuko = format_and_cache_kyuko(kyuko, cache=args.cache)
-        send_kyuko(kyuko, user=args.user, password=args.password)
+        if args.debug_only_print:
+            print kyuko
+        else:
+            kyuko = parse_kyuko(kyuko)
+            kyuko = format_and_cache_kyuko(kyuko, cache=args.cache)
+            send_kyuko(kyuko, user=args.user, password=args.password)
     except:
         logging.exception('')
         sys.exit(1)
