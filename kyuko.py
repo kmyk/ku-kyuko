@@ -74,21 +74,25 @@ def format_and_cache_kyuko(data, cache):
     logging.info('{} new event found'.format(len(draft)))
     return draft
 
-def send_kyuko(data, user, password):
+def email_addr_of(user):
+    return '{}@stu.kobe-u.ac.jp'.format(user)
+
+def send_kyuko(data, user, dests, password):
     if len(data) == 0:
         logging.info('nothing to email')
         return
     logging.debug('begin sending')
-    addr = '{}@stu.kobe-u.ac.jp'.format(user)
+    addr = email_addr_of(user)
     msg = email.mime.text.MIMEText('\n'.join(data), 'plain', 'utf-8')
     msg['Subject'] = '休補講情報 at {}'.format(datetime.datetime.today().strftime('%m/%d %H:%M'))
     msg['From'] = addr
-    msg['To'] = addr
     msg['Date'] = email.Utils.formatdate()
     smtp = smtplib.SMTP_SSL('smtp.kobe-u.ac.jp', 465)
     smtp.ehlo()
     smtp.login(addr, password)
-    smtp.sendmail(addr, [addr], msg.as_string())
+    for dest in dests:
+        msg['To'] = dest
+        smtp.sendmail(addr, [dest], msg.as_string())
     smtp.quit()
     logging.info('email sent to {}'.format(addr))
 
@@ -99,6 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--password')
     parser.add_argument('--cache', default=os.path.expanduser('~/.ku-kyuko/cache'))
     parser.add_argument('--log', default=os.path.expanduser('~/.ku-kyuko/log'))
+    parser.add_argument('--dests', default=os.path.expanduser('~/.ku-kyuko/dests'))
     parser.add_argument('--debug-not-use-mobile', action='store_true')
     parser.add_argument('--debug-only-print', action='store_true')
     args = parser.parse_args()
@@ -115,6 +120,11 @@ if __name__ == '__main__':
         dirname = os.path.dirname(os.path.abspath(f))
         if not os.path.exists(dirname):
             os.makedirs(dirname)
+    if os.path.exists(args.dests):
+        args.dests = list(filter(lambda x: x, map(lambda x: x.strip(), open(args.dests).readlines())))
+    else:
+        args.dests = [email_addr_of(args.user)]
+
     logging.basicConfig(filename=args.log, level=logging.DEBUG)
 
     logging.debug('begin program')
@@ -126,7 +136,7 @@ if __name__ == '__main__':
         else:
             kyuko = parse_kyuko(kyuko)
             kyuko = format_and_cache_kyuko(kyuko, cache=args.cache)
-            send_kyuko(kyuko, user=args.user, password=args.password)
+            send_kyuko(kyuko, user=args.user, dests=args.dests, password=args.password)
     except:
         logging.exception('')
         sys.exit(1)
