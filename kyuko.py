@@ -84,15 +84,13 @@ def send_kyuko(data, user, dests, password):
     logging.debug('begin sending')
     addr = email_addr_of(user)
     msg = email.mime.text.MIMEText('\n'.join(data), 'plain', 'utf-8')
-    msg['Subject'] = '休補講情報 at {}'.format(datetime.datetime.today().strftime('%m/%d %H:%M'))
+    msg['Subject'] = '休補講情報 ({})'.format(datetime.datetime.today().strftime('%m/%d %H:%M'))
     msg['From'] = addr
     msg['Date'] = email.Utils.formatdate()
     smtp = smtplib.SMTP_SSL('smtp.kobe-u.ac.jp', 465)
     smtp.ehlo()
     smtp.login(addr, password)
-    for dest in dests:
-        msg['To'] = dest
-        smtp.sendmail(addr, [dest], msg.as_string())
+    smtp.sendmail(addr, dests, msg.as_string())
     smtp.quit()
     logging.info('email sent to {}'.format(addr))
 
@@ -121,7 +119,7 @@ if __name__ == '__main__':
         if not os.path.exists(dirname):
             os.makedirs(dirname)
     if os.path.exists(args.dests):
-        args.dests = list(filter(lambda x: x, map(lambda x: x.strip(), open(args.dests).readlines())))
+        args.dests = list(filter(lambda x: x, map(lambda x: x.partition('#')[0].strip(), open(args.dests).readlines())))
     else:
         args.dests = [email_addr_of(args.user)]
 
