@@ -1,5 +1,7 @@
 # 神大休講情報監視ツール
 
+**システム側の更新により動作しなくなった** (issue #1)
+
 ## install
 ``` sh
     $ apt-get install python-mechanize
